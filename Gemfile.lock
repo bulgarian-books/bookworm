@@ -6,7 +6,7 @@ GEM
     mini_portile (0.5.1)
     nokogiri (1.6.0)
       mini_portile (~> 0.5.0)
-    reacto (0.0.0)
+    reacto (0.0.1)
       concurrent-ruby (~> 1.0.0)
     rest-client (1.6.7)
       mime-types (>= 1.16)
@@ -15,6 +15,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  nokogiri
+  nokogiri (~> 1.6.0)
   reacto (~> 0.0.0)
   rest-client (~> 1.6.7)
