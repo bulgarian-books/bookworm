@@ -49,12 +49,21 @@ results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
   end
   .select { |value| value[:data].children.first.name == 'td' }
   .map { |value| { page: value[:page], data: value[:data].children.first } }
-  .map do |value|
+  .flat_map do |value|
+    link = value[:data].css('a').attr('onclick').value
+      .scan(/^\$\.submitPage\('(.+?)'.*$/).flatten.first
+
     name_code = value[:data].text.strip.scan(/^(.+), код ([\d-]+)$/).flatten
-    value.merge({ name: name_code.first, code: name_code.last })
+    basic = { name: name_code.first, code: name_code.last, page: value[:page] }
+
+    Reacto::HTTP.get("http://www.booksinprint.bg#{link}")
+      .map { |value| Nokogiri::HTML(value) }
+      .wrap(basic)
   end
+  .map(&:to_h)
 
 consumer = ->(value) do
+  p value
   return if value[:code].nil? || value[:name].nil?
 
   p "#{value[:code]} -> #{value[:name]}"
