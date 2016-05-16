@@ -10,28 +10,16 @@ require 'pg'
 require 'reacto/http'
 
 require 'bookworm/settings'
+require 'bookworm/prepared_statements'
 
 settings = Bookworm::Settings.instance
+Bookworm::PreparedStatements.prepare!(settings)
 
 start_page = settings.connection.exec(
   'SELECT MAX(page) FROM publishers'
 ).first['max'] || 0
 start_page = start_page.to_i
 start_page += 1
-
-settings.connection.prepare(
-  'insert_publisher',
-  'INSERT INTO publishers (name, code, page) VALUES ($1, $2, $3)'
-)
-
-settings.connection.prepare(
-  'insert_publisher_alias',
-  'INSERT INTO publisher_aliases (name, publisher_id) VALUES ($1, $2)'
-)
-
-settings.connection.prepare(
-  'select_publisher_by_code', 'SELECT * FROM publishers WHERE code = $1'
-)
 
 results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
   .map { |value| Nokogiri::HTML(value) }
