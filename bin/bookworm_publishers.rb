@@ -57,7 +57,7 @@ results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
     basic = { name: name_code.first, code: name_code.last, page: value[:page] }
 
     Reacto::HTTP.get("http://www.booksinprint.bg#{link}")
-      .map { |value| Nokogiri::HTML(value) }
+      .map { |val| Nokogiri::HTML(val) }
       .wrap(basic)
   end
   .map(&:to_h)
@@ -68,19 +68,20 @@ consumer = ->(value) do
 
   p "#{value[:code]} -> #{value[:name]}"
 
+  settings.connection.transaction do |connection|
+    record = connection.exec_prepared('select_publisher_by_code', [
+      value[:code]
+    ]).first
 
-  record = settings.connection.exec_prepared('select_publisher_by_code', [
-    value[:code]
-  ]).first
-
-  if record.nil?
-    settings.connection.exec_prepared('insert_publisher', [
-      value[:name], value[:code], value[:page]
-    ])
-  else
-    settings.connection.exec_prepared('insert_publisher_alias', [
-      value[:name], record['id']
-    ])
+    if record.nil?
+      connection.exec_prepared('insert_publisher', [
+        value[:name], value[:code], value[:page]
+      ])
+    else
+      connection.exec_prepared('insert_publisher_alias', [
+        value[:name], record['id']
+      ])
+    end
   end
 end
 
