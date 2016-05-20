@@ -18,6 +18,10 @@ module Reacto
           end
         end
       end
+
+      def get
+        flat_map { |url| self.class.get(url) }
+      end
     end
   end
 end
