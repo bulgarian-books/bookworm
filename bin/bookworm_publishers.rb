@@ -58,6 +58,7 @@ results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
 
     Reacto::HTTP.get("http://www.booksinprint.bg#{link}")
       .map { |val| Nokogiri::HTML(val) }
+      .map { |document| document.css('fieldset') }
       .wrap(basic)
   end
   .map(&:to_h)
