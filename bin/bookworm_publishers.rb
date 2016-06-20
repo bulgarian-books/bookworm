@@ -58,16 +58,36 @@ results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
 
     Reacto::HTTP.get("http://www.booksinprint.bg#{link}")
       .map { |val| Nokogiri::HTML(val) }
-      .map { |document| document.css('fieldset') }
+      .flat_map do |document|
+        Reacto::Trackable.enumerable(document.css('fieldset'))
+      end
+      .group_by_label { |document| [document.css('legend').text, document] }
+      .flat_map(label: 'Издател') do |document|
+        Reacto::Trackable.enumerable(document.css('table.issue tr'))
+      end
+      .split_labeled('Издател') do |document|
+        [document.css('td.first-col').text.strip, document]
+      end
+      .map(label: 'Адрес') { |document| document.css('table.blank tr td') }
+      .map(label: 'Адрес') { |elements| elements.map(&:text).map(&:strip) }
+      .map(label: 'Адрес') do |data|
+        {
+          town: data[1].split("\r\n").first,
+          address: data[3],
+          phone: data.last
+        }
+      end
+      .flatten_labeled
+      .act { |v| p v }
       .wrap(basic)
   end
   .map(&:to_h)
 
 consumer = ->(value) do
-  p value
   return if value[:code].nil? || value[:name].nil?
 
   p "#{value[:code]} -> #{value[:name]}"
+  return
 
   settings.connection.transaction do |connection|
     record = connection.exec_prepared('select_publisher_by_code', [
