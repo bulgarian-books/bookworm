@@ -1,13 +1,15 @@
-PATH
-  remote: ../reacto
+GIT
+  remote: git://github.com/meddle0x53/reacto.git
+  revision: c4623a92c20e34cdc45f4aef5d2bc53e9bbeb842
+  branch: version-1.0.0
   specs:
-    reacto (0.0.5)
+    reacto (1.0.0)
       concurrent-ruby (~> 1.0.0)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    concurrent-ruby (1.0.1)
+    concurrent-ruby (1.0.2)
     mime-types (1.25.1)
     mini_portile (0.5.1)
     nokogiri (1.6.0)
@@ -22,5 +24,5 @@ PLATFORMS
 DEPENDENCIES
   nokogiri (~> 1.6.0)
   pg (~> 0.16.0)
-  reacto!
+  reacto (~> 1.0.0)!
   rest-client (~> 1.6.7)
