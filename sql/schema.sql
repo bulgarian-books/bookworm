@@ -2,7 +2,6 @@ CREATE TABLE IF NOT EXISTS publishers (
   id          serial PRIMARY KEY,
   name        varchar(255) NOT NULL,
   code        varchar(20) NOT NULL UNIQUE,
-  info        varchar(255),
   state       varchar(20),
   page        int NOT NULL,
   created_at  timestamp DEFAULT now(),
@@ -22,6 +21,17 @@ CREATE TABLE IF NOT EXISTS publisher_contacts (
   publisher_id  integer REFERENCES publishers (id),
   name          varchar(255) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS publisher_addresses (
+  id            serial PRIMARY KEY,
+  publisher_id  integer REFERENCES publishers (id),
+  town          varchar(255) NOT NULL,
+  main          varchar(255) NOT NULL,
+  phone         varchar(16) NOT NULL,
+  mail          varchar(16) NOT NULL
+);
+
+CREATE INDEX publisher_addresses_town_idx ON publisher_addresses (town);
 
 CREATE TABLE IF NOT EXISTS authors (
   id            serial PRIMARY KEY,
