@@ -2,6 +2,7 @@
 
 $LOAD_PATH.unshift(File.join(__dir__, '..', 'lib'))
 
+require 'ostruct'
 require 'reacto'
 require 'rest-client'
 require 'nokogiri'
@@ -68,6 +69,11 @@ results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
       .split_labeled('Издател') do |document|
         [document.css('td.first-col').text.strip, document]
       end
+      .select do |trackable|
+        [
+          'Адрес', 'Тематики', 'Статус', 'Лица за контакт/отговорни лица'
+        ].include?(trackable.label)
+      end
       .map(label: 'Адрес') { |document| document.css('table.blank tr td') }
       .map(label: 'Адрес') { |elements| elements.map(&:text).map(&:strip) }
       .map(label: 'Адрес') do |data|
@@ -77,30 +83,62 @@ results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
           phone: data.last
         }
       end
-      .flatten_labeled
-      .act { |v| p v }
-      .wrap(basic)
+      .map(label: 'Тематики') do |document|
+        { themes: document.css('td:last').text.split(',').map(&:strip) }
+      end
+      .map(label: 'Статус') do |document|
+        text = document.css('td:last').text.strip
+        { state: text == 'Активен' ? :active : :inactive }
+      end
+      .map(label: 'Лица за контакт/отговорни лица') do |document|
+        { contact: document.css('tr:last td:first').text.strip }
+      end
+      .flatten_labeled.map(&:value)
+      .inject({}) { |current, val| current.merge(val) }.last
+      .map do |data|
+        if data[:phone] && data[:phone].include?('@')
+          data[:email] = data[:phone]
+          data.delete(:phone)
+        end
+        if data[:phone] && data[:phone].include?('www')
+          data[:site] = data[:phone]
+          data.delete(:phone)
+        end
+
+        data
+      end
+      .map { |data| OpenStruct.new(data.merge(basic)) }
   end
-  .map(&:to_h)
 
 consumer = ->(value) do
-  return if value[:code].nil? || value[:name].nil?
+  return if value.code.nil? || value.name.nil?
 
-  p "#{value[:code]} -> #{value[:name]}"
-  return
+  p "#{value.code} -> #{value.name}"
 
   settings.connection.transaction do |connection|
-    record = connection.exec_prepared('select_publisher_by_code', [
-      value[:code]
-    ]).first
+    record = connection.exec_prepared('select_publisher_by_code', [value.code])
+      .first
 
     if record.nil?
-      connection.exec_prepared('insert_publisher', [
-        value[:name], value[:code], value[:page]
+      record = connection.exec_prepared('insert_publisher', [
+        value.name, value.code, value.state, value.page
       ])
+      id = record[0]['id']
+
+      if value.contact && value.contact.strip != ''
+        connection.exec_prepared(
+          'insert_publisher_contacts', [value.contact, id]
+        )
+      end
+
+      if value.town && value.town.strip != ''
+        connection.exec_prepared('insert_publisher_addresses', [
+          value.town, value.address, value.phone, value.email, value.site,  id
+        ])
+      end
     else
       connection.exec_prepared('insert_publisher_alias', [
-        value[:name], record['id']
+        value.name, record['id']
       ])
     end
   end
