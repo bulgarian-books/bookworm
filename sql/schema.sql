@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS publishers (
   id          serial PRIMARY KEY,
   name        varchar(255) NOT NULL,
   code        varchar(20) NOT NULL UNIQUE,
-  state       varchar(20),
+  state       varchar(8) DEFAULT 'inactive',
   page        int NOT NULL,
   created_at  timestamp DEFAULT now(),
   updated_at  timestamp DEFAULT now()
@@ -26,9 +26,10 @@ CREATE TABLE IF NOT EXISTS publisher_addresses (
   id            serial PRIMARY KEY,
   publisher_id  integer REFERENCES publishers (id),
   town          varchar(255) NOT NULL,
-  main          varchar(255) NOT NULL,
-  phone         varchar(16) NOT NULL,
-  mail          varchar(16) NOT NULL
+  main          varchar(255),
+  phone         varchar(255),
+  email         varchar(255),
+  site          varchar(255)
 );
 
 CREATE INDEX publisher_addresses_town_idx ON publisher_addresses (town);
