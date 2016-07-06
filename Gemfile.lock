@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/meddle0x53/reacto.git
-  revision: c4623a92c20e34cdc45f4aef5d2bc53e9bbeb842
+  revision: 5f6a17b18cdc288b9290945e76cace7996932c22
   branch: version-1.0.0
   specs:
     reacto (1.0.0)
