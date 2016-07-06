@@ -65,18 +65,32 @@ CREATE INDEX categories_name_idx ON categories (name);
 
 CREATE TABLE IF NOT EXISTS books (
   id            serial PRIMARY KEY,
-  isbn          varchar(20) NOT NULL UNIQUE,
+  isbn          varchar(31) NOT NULL UNIQUE,
   publisher_id  integer REFERENCES publishers (id),
-  author_id     integer REFERENCES authors (id),
   language_id   integer REFERENCES languages (id),
   genre_id      integer REFERENCES genres (id),
   category_id   integer REFERENCES categories (id),
   title         varchar(255) NOT NULL,
   cover         varchar(255) NOT NULL,
   issue         int NOT NULL,
+  description   text,
+  copies        int,
+  price         int,
   publish_date  timestamp,
-  created_at  timestamp DEFAULT now(),
-  updated_at  timestamp DEFAULT now()
+  created_at    timestamp DEFAULT now(),
+  updated_at    timestamp DEFAULT now()
 );
 
 CREATE INDEX books_title_idx ON books (title);
+
+CREATE TABLE IF NOT EXISTS books_authors (
+  id          serial PRIMARY KEY,
+  book_id     integer REFERENCES books (id),
+  author_id   integer REFERENCES authors (id)
+);
+
+CREATE TABLE IF NOT EXISTS isbns (
+  id          serial PRIMARY KEY,
+  isbn        varchar(31) NOT NULL UNIQUE,
+  book_id     integer REFERENCES books (id)
+);
