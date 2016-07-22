@@ -34,7 +34,7 @@ module Bookworm
 
       settings.connection.prepare(
         'select_publishers',
-        'SELECT * FROM publishers WHERE page IS NOT NULL OFFSET 2000 LIMIT 2000'
+        'SELECT * FROM publishers WHERE page IS NOT NULL OFFSET 6000 LIMIT 1000'
       )
 
       settings.connection.prepare(
