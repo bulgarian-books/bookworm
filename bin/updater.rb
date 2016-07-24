@@ -51,7 +51,94 @@ trackable = Reacto::HTTP.get('http://www.booksinprint.bg/Home/NewEditions')
                   "SELECT * FROM publishers WHERE code IN (#{param})"
                 )
               end
-              .map { |result| result.first['id'] }
+              .flat_map do |result|
+                if result.first.nil?
+                  Reacto::HTTP.get("http://www.booksinprint.bg#{publisher_url}")
+      .map { |val| Nokogiri::HTML(val) }
+      .flat_map do |document|
+        Reacto::Trackable.enumerable(document.css('fieldset'))
+      end
+      .group_by_label { |document| [document.css('legend').text, document] }
+      .flat_map(label: 'Издател') do |document|
+        Reacto::Trackable.enumerable(document.css('table.issue tr'))
+      end
+      .split_labeled('Издател') do |document|
+        [document.css('td.first-col').text.strip, document]
+      end
+      .select do |trackable|
+        [
+          'Адрес', 'Тематики', 'Статус', 'Лица за контакт/отговорни лица',
+          'Име', 'Кодове'
+        ].include?(trackable.label)
+      end
+      .map(label: 'Адрес') { |document| document.css('table.blank tr td') }
+      .map(label: 'Адрес') { |elements| elements.map(&:text).map(&:strip) }
+      .map(label: 'Адрес') do |data|
+        {
+          town: data[1].split("\r\n").first,
+          address: data[3],
+          phone: data.last
+        }
+      end
+      .map(label: 'Тематики') do |document|
+        { themes: document.css('td:last').text.split(',').map(&:strip) }
+      end
+      .map(label: 'Име') do |document|
+        { name: document.css('td:last').text.strip }
+      end
+      .map(label: 'Кодове') do |document|
+        { code: document.text.strip.delete("Кодове\r\n        ") }
+      end
+      .map(label: 'Статус') do |document|
+        text = document.css('td:last').text.strip
+        { state: text == 'Активен' ? :active : :inactive }
+      end
+      .map(label: 'Лица за контакт/отговорни лица') do |document|
+        { contact: document.css('tr:last td:first').text.strip }
+      end
+      .flatten_labeled.map(&:value)
+      .inject({}) { |current, val| current.merge(val) }.last
+      .map do |data|
+        if data[:phone] && data[:phone].include?('@')
+          data[:email] = data[:phone]
+          data.delete(:phone)
+        end
+        if data[:phone] && data[:phone].include?('www')
+          data[:site] = data[:phone]
+          data.delete(:phone)
+        end
+
+        data
+      end
+      .act { |n| p n }
+      .map { |data| OpenStruct.new(data) }
+      .map do |value|
+        id = 0
+        settings.connection.transaction do |connection|
+          record = connection.exec_prepared('insert_publisher', [
+            value.name, value.code, value.state, 555
+          ])
+          id = record[0]['id']
+
+          if value.contact && value.contact.strip != ''
+            connection.exec_prepared(
+              'insert_publisher_contacts', [value.contact, id]
+            )
+          end
+
+          if value.town && value.town.strip != ''
+            connection.exec_prepared('insert_publisher_addresses', [
+              value.town, value.address, value.phone, value.email, value.site,  id
+            ])
+          end
+        end
+
+        id
+      end
+                else
+                  Reacto::Trackable.value(result.first['id'])
+                end
+              end
               .map(&:to_i)
 
           Reacto::HTTP.get("http://www.booksinprint.bg#{url}")
