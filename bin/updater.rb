@@ -203,6 +203,11 @@ consumer = ->(value) do
     isbns = value[:isbn].split(';')
     primary_isbn = isbns.find { |isbn| isbn.start_with?('978') } || isbns.first
 
+    if primary_isbn.nil?
+      p 'No ISBN?'
+      return
+    end
+
     data =
       connection.exec_prepared('select_book_id_by_isbn', [primary_isbn]).first
     unless data.nil?

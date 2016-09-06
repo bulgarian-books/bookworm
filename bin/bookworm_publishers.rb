@@ -25,7 +25,10 @@ start_page += 1
 results = Reacto::HTTP.get('http://www.booksinprint.bg/Publisher/Search')
   .map { |value| Nokogiri::HTML(value) }
   .map { |value| value.css('div.pageing div.right') }
-  .map(&:children).map(&:first).map(&:text).map(&:strip)
+  .map(&:children)
+  .map(&:first)
+  .map(&:text)
+  .map(&:strip)
   .map { |value| value.scan(/\d+/) }
   .map(&:flatten).map(&:first).map(&:to_i)
   .map { |value| (value / 10) + 1 }
